@@ -16,22 +16,69 @@ class _AgendaFormState extends State<AgendaForm> {
   final _ket = TextEditingController();
   final _service = AgendaService();
 
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
+
   @override
   void initState() {
     super.initState();
     if (widget.agenda != null) {
       _judul.text = widget.agenda!.judul;
       _ket.text = widget.agenda!.keterangan;
+
+      // Tangani null/empty saat parsing tanggal
+      if (widget.agenda!.tanggal.isNotEmpty) {
+        _selectedDate = DateTime.tryParse(widget.agenda!.tanggal);
+      }
+
+      if (widget.agenda!.jam.isNotEmpty) {
+        final timeParts = widget.agenda!.jam.split(':');
+        if (timeParts.length == 2) {
+          _selectedTime = TimeOfDay(
+            hour: int.tryParse(timeParts[0]) ?? 0,
+            minute: int.tryParse(timeParts[1]) ?? 0,
+          );
+        }
+      }
     }
+  }
+
+  void _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) setState(() => _selectedDate = picked);
+  }
+
+  void _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime ?? TimeOfDay.now(),
+    );
+    if (picked != null) setState(() => _selectedTime = picked);
   }
 
   void _submit() async {
     if (_formKey.currentState!.validate()) {
+      if (_selectedDate == null || _selectedTime == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tanggal dan jam harus dipilih')),
+        );
+        return;
+      }
+
       final agenda = Agenda(
         id: widget.agenda?.id,
         judul: _judul.text,
         keterangan: _ket.text,
+        tanggal: _selectedDate!.toIso8601String(),
+        jam:
+            '${_selectedTime!.hour}:${_selectedTime!.minute.toString().padLeft(2, '0')}',
       );
+
       try {
         if (widget.agenda == null) {
           await _service.create(agenda);
@@ -57,7 +104,7 @@ class _AgendaFormState extends State<AgendaForm> {
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
-          child: Column(
+          child: ListView(
             children: [
               TextFormField(
                 controller: _judul,
@@ -68,6 +115,30 @@ class _AgendaFormState extends State<AgendaForm> {
               TextFormField(
                 controller: _ket,
                 decoration: const InputDecoration(labelText: 'Keterangan'),
+              ),
+              TextFormField(
+                readOnly: true,
+                onTap: _pickDate,
+                decoration: InputDecoration(
+                  labelText: 'Tanggal',
+                  hintText: _selectedDate == null
+                      ? 'Pilih tanggal'
+                      : '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
+                ),
+                validator: (_) =>
+                    _selectedDate == null ? 'Wajib pilih tanggal' : null,
+              ),
+              TextFormField(
+                readOnly: true,
+                onTap: _pickTime,
+                decoration: InputDecoration(
+                  labelText: 'Jam',
+                  hintText: _selectedTime == null
+                      ? 'Pilih jam'
+                      : _selectedTime!.format(context),
+                ),
+                validator: (_) =>
+                    _selectedTime == null ? 'Wajib pilih jam' : null,
               ),
               const SizedBox(height: 20),
               ElevatedButton(

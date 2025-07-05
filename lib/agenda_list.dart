@@ -44,29 +44,46 @@ class _AgendaListState extends State<AgendaList> {
               itemCount: data.length,
               itemBuilder: (_, i) {
                 final item = data[i];
-                return ListTile(
-                  title: Text(item.judul),
-                  subtitle: Text(item.keterangan),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () async {
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => AgendaForm(agenda: item),
-                            ),
-                          );
-                          if (result == true) _refresh();
-                        },
+                return Card(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: ListTile(
+                    title: Text(
+                      '${item.judul} (${item.tanggal.split("T")[0]})',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => _delete(item.id!),
-                      ),
-                    ],
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 4),
+                        Text(item.keterangan),
+                        const SizedBox(height: 2),
+                        Text('Jam: ${item.jam}'),
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AgendaForm(agenda: item),
+                              ),
+                            );
+                            if (result == true) _refresh();
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () => _delete(item.id!),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
